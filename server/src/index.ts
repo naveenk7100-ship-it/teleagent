@@ -11,6 +11,12 @@ import { optionalAuth } from './middleware/auth.js';
 import { securityHeaders } from './middleware/security.js';
 import { requestLogger } from './middleware/logger.js';
 import { apiRateLimiter, authRateLimiter } from './middleware/rateLimiter.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = config.port;
@@ -97,6 +103,26 @@ app.use('/api/auth', authRateLimiter, authRouter);
 
 // 6. Mount Business REST API with API Rate Limiting & Optional Auth Context
 app.use('/api', apiRateLimiter, optionalAuth, apiRouter);
+
+// 6.5. Serve Static Frontend SPA if client/dist exists
+const clientDistCandidates = [
+  path.resolve(__dirname, '../../client/dist'),
+  path.resolve(__dirname, '../public'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(process.cwd(), '../client/dist'),
+];
+
+const staticDir = clientDistCandidates.find(dir => fs.existsSync(dir) && fs.existsSync(path.join(dir, 'index.html')));
+
+if (staticDir) {
+  app.use(express.static(staticDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/ws') || req.path.startsWith('/health') || req.path.startsWith('/ready')) {
+      return next();
+    }
+    res.sendFile(path.join(staticDir, 'index.html'));
+  });
+}
 
 // 7. Create HTTP Server & WebSocket Server
 const server = http.createServer(app);
