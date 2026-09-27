@@ -25,12 +25,10 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  # 2. TeleAgent React Frontend SPA
+  # 2. TeleAgent React Frontend SPA (Static Site)
   - type: web
     name: teleagent-frontend
     runtime: static
-    plan: starter
-    region: oregon
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/dist
     routes:
