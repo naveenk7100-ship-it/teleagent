@@ -70,10 +70,14 @@ export class AgentOrchestrator {
       isPlayground: input.isPlayground,
     });
 
-    // Save incoming user message
+    // Save incoming user message with Telegram ID metadata
     db.appendMessage(conversation.id, {
       role: 'user',
       content: userMessage,
+      metadata: {
+        telegramMessageId: input.telegramMessageId,
+        telegramUpdateId: input.telegramUpdateId,
+      }
     });
 
     // If human handoff is currently active, AI does not interfere unless operator paused/resumed
@@ -135,30 +139,32 @@ export class AgentOrchestrator {
 
     // 5. Working Hours & Holiday Check
     const hoursCheck = SafetyEngine.checkWorkingHours(agent);
-    if (!hoursCheck.isWithinHours) {
-      if (input.isPlayground) {
+    let outsideHoursNotice = '';
+    const isOutsideHours = !hoursCheck.isWithinHours;
+
+    if (isOutsideHours) {
+      const isBookingIntent = /(?:book|schedule|appointment|reserve|reservation|consultation|slot|table|viewing|tour|meeting|consult)/i.test(userMessage);
+      const isSupportIntent = /(?:issue|problem|broken|error|bug|complaint|refund|not working|crash|billing|prescription|refill|rx)/i.test(userMessage);
+      const isKnowledgeIntent = /(?:price|pricing|cost|services|what (?:are|do|is)|hours|where|location|who|contact|phone|email)/i.test(userMessage);
+
+      if (!input.isPlayground && !isBookingIntent && !isSupportIntent && !isKnowledgeIntent) {
+        // Generic greeting or ping outside business hours
         executionSteps.push({
-          title: 'Working Hours Notice (Playground Override)',
-          status: 'info',
-          detail: `Live agent is currently outside business hours (${hoursCheck.reason}). Simulating live response in Playground.`,
-        });
-      } else {
-        executionSteps.push({
-          title: 'Working Hours Filter',
+          title: 'Working Hours Notice',
           status: 'info',
           detail: hoursCheck.reason,
         });
 
-        const outOfHoursReply = hoursCheck.outOfHoursMessage || agent.workingHours.outOfHoursMessage;
+        const greetingOutOfHours = `Hello! Thank you for reaching out to **${agent.businessName}**.\n\nOur office is currently outside regular business hours (${hoursCheck.reason}).\n\nWhile our staff is away, I can assist you with:\n• Recording an appointment request for our next business day\n• Providing verified information on our services & pricing\n• Taking a message for our team\n\nHow can I help you today?`;
 
         db.appendMessage(conversation.id, {
           role: 'assistant',
-          content: outOfHoursReply,
+          content: greetingOutOfHours,
           metadata: { outOfHoursTriggered: true },
         });
 
         return {
-          reply: outOfHoursReply,
+          reply: greetingOutOfHours,
           executionSteps,
           toolExecutions: [],
           handoffTriggered: false,
@@ -167,6 +173,14 @@ export class AgentOrchestrator {
           tokensUsed: 30,
         };
       }
+
+      // If user is booking, inquiring, or reporting an issue: proceed through knowledge & tools with outside-hours context
+      outsideHoursNotice = `\n[BUSINESS HOURS NOTICE: Currently outside operating hours (${hoursCheck.reason}). Office hours: ${agent.workingHours.outOfHoursMessage || 'Monday - Friday 9:00 AM - 6:00 PM'}. If booking or requesting consultation, record request as Pending Staff Review for the next business day and explain hours politely.]\n`;
+      executionSteps.push({
+        title: 'Working Hours Filter',
+        status: 'info',
+        detail: `Currently outside hours (${hoursCheck.reason}). Processing inquiry and recording request for next business day.`,
+      });
     }
 
     // 6. Memory Extraction & Lookup
@@ -205,7 +219,7 @@ export class AgentOrchestrator {
 
     const llmResult = await LLMService.generateAgentResponse({
       agent,
-      systemInstructions: agent.systemInstructions,
+      systemInstructions: `${agent.systemInstructions}${outsideHoursNotice}`,
       knowledgeContext,
       memoryContext: memoryContext.formattedString,
       userMessage: userMessage,
@@ -219,6 +233,8 @@ export class AgentOrchestrator {
         username: input.username,
         chatId: input.chatId,
         isPlayground: input.isPlayground,
+        isOutsideHours,
+        hoursReason: hoursCheck.reason,
       },
     });
 

@@ -26,6 +26,8 @@ export interface ToolExecutionContext {
   username?: string;
   chatId: string;
   isPlayground?: boolean;
+  isOutsideHours?: boolean;
+  hoursReason?: string;
 }
 
 export interface ToolExecutionResult {

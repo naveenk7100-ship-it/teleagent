@@ -158,11 +158,20 @@ server.listen(PORT, async () => {
   console.log(`🛡️ CORS Allowed: ${config.corsOrigins.join(', ')}`);
   console.log(`====================================================`);
 
-  // Start polling for connected agents marked for polling
+  // Start polling for connected agents marked for polling (deduplicated by token)
   try {
     const agents = await db.getAgents();
-    const activeAgents = agents.filter(a => a.telegramBot.isConnected && a.telegramBot.usePolling && a.telegramBot.token);
-    activeAgents.forEach(a => {
+    const activeAgents = agents.filter(a => a.telegramBot?.isConnected && a.telegramBot?.usePolling && a.telegramBot?.token);
+    
+    // Deduplicate: keep only the latest active agent per unique token
+    const uniqueTokenAgents = new Map<string, typeof activeAgents[0]>();
+    for (const agent of activeAgents) {
+      if (agent.telegramBot?.token) {
+        uniqueTokenAgents.set(agent.telegramBot.token.trim(), agent);
+      }
+    }
+
+    uniqueTokenAgents.forEach((a) => {
       TelegramBotManager.startPolling(a.id);
     });
   } catch (err: any) {

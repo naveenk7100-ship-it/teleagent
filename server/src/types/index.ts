@@ -350,6 +350,8 @@ export interface AgentExecutionInput {
   message: string;
   userInput?: string;
   isPlayground?: boolean;
+  telegramMessageId?: number;
+  telegramUpdateId?: number;
 }
 
 export interface AgentExecutionResult {

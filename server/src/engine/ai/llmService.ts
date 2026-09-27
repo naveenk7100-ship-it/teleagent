@@ -308,7 +308,11 @@ Followed by your natural, courteous message to the user.
         });
       }
 
-      reply = `Thank you, ${customerName}! I have recorded your appointment request for **${serviceName}** on **${requestedDate}** around **${requestedTime}**.\n\n📋 **Status:** Pending Staff Confirmation\nOur scheduling team will review the calendar and confirm your slot via message/phone shortly. Is there anything specific you would like our staff to prepare in advance?`;
+      if (executionContext.isOutsideHours) {
+        reply = `Thank you, ${customerName}! Our office is currently closed (${executionContext.hoursReason || 'outside business hours'}).\n\nI have recorded your appointment request for **${serviceName}** on **${requestedDate}** (${requestedTime}).\n\n📋 **Status:** Pending Staff Review\nOur scheduling team will review the calendar and confirm your slot as soon as our office opens. Is there anything specific you would like our team to note in advance?`;
+      } else {
+        reply = `Thank you, ${customerName}! I have recorded your appointment request for **${serviceName}** on **${requestedDate}** around **${requestedTime}**.\n\n📋 **Status:** Pending Staff Confirmation\nOur scheduling team will review the calendar and confirm your slot via message/phone shortly. Is there anything specific you would like our staff to prepare in advance?`;
+      }
       return { replyText: reply, toolInvocations, tokensUsed };
     }
 
