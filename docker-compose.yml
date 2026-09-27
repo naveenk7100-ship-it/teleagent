@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: teleagent-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: teleagent
+      POSTGRES_USER: teleagent_user
+      POSTGRES_PASSWORD: teleagent_secure_db_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teleagent_user -d teleagent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: teleagent-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://teleagent_user:teleagent_secure_db_pass@postgres:5432/teleagent?sslmode=disable
+      SESSION_SECRET: default_teleagent_production_session_secret_2026_change_in_prod
+      CREDENTIAL_ENCRYPTION_KEY: default_teleagent_production_encryption_key_2026_change_in_prod
+      FRONTEND_URL: http://localhost:80
+      CORS_ORIGIN: http://localhost:80,http://localhost:5173,http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3001
+    container_name: teleagent-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

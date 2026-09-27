@@ -1,0 +1,26 @@
+{
+  "name": "telegram-agent-builder",
+  "version": "1.0.0",
+  "description": "AI Telegram Agent Builder — Enterprise Multi-Agent & Multi-Client Platform",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "dev": "node run-dev.js",
+    "build": "cd server && npm run build && cd ../client && npm run build",
+    "start": "cd server && npm start"
+  },
+  "keywords": [
+    "ai",
+    "telegram",
+    "agent-builder",
+    "multi-agent",
+    "crm",
+    "receptionist",
+    "sales-agent"
+  ],
+  "author": "Antigravity AI Team",
+  "license": "MIT"
+}

@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment Variables and Secrets
+.env
+.env.*
+*.env
+server/.env
+server/.env.*
+client/.env
+client/.env.*
+*.pem
+*.key
+
+# Preserve example templates
+!.env.example
+!*.env.example
+!server/.env.example
+!client/.env.example
+
+# Local Data and SQLite/JSON databases
+data/
+*.sqlite
+*.sqlite3
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
