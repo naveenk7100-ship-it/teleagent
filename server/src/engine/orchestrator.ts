@@ -77,7 +77,7 @@ export class AgentOrchestrator {
     });
 
     // If human handoff is currently active, AI does not interfere unless operator paused/resumed
-    if (conversation.handoffActive && !input.isPlayground) {
+    if (conversation.handoffActive) {
       executionSteps.push({
         title: 'Human Handoff Active',
         status: 'info',

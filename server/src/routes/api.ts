@@ -422,8 +422,8 @@ router.post('/conversations/:id/resume', async (req: Request, res: Response) => 
   res.json({ success: true, conversation: updated, message: resumeMsg });
 });
 
-router.post('/conversations/:id/toggle-handoff', async (req: Request, res: Response) => {
-  const { handoffActive } = req.body;
+const handleHandoffToggle = async (req: Request, res: Response) => {
+  const handoffActive = req.body.handoffActive !== undefined ? req.body.handoffActive : (req.body.active !== undefined ? req.body.active : true);
   const conv = db.getConversationById(req.params.id as string);
   if (!conv) return res.status(404).json({ error: 'Conversation not found' });
 
@@ -471,7 +471,11 @@ router.post('/conversations/:id/toggle-handoff', async (req: Request, res: Respo
 
     res.json({ success: true, conversation: updated, message: resumeMsg });
   }
-});
+};
+
+router.post('/conversations/:id/toggle-handoff', handleHandoffToggle);
+router.put('/conversations/:id/handoff', handleHandoffToggle);
+router.post('/conversations/:id/handoff', handleHandoffToggle);
 
 // ==========================================
 // 10. AGENT TESTING PLAYGROUND
