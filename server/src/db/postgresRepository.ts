@@ -64,9 +64,7 @@ export class PostgresRepository implements IRepository {
       return true; // Json fallback is always ready
     }
     try {
-      const client = await this.pool.connect();
-      await client.query('SELECT 1');
-      client.release();
+      await this.pool.query('SELECT 1');
       return true;
     } catch {
       return false;
